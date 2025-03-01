@@ -61,13 +61,21 @@ with tab1:
     else:
         st.warning("No data found in TrollyProducts table.")
 
-# Tab 2: Display TrollyOrder Table
+# Tab 2: Display TrollyOrder Table with Total Bill Calculation
 with tab2:
     st.subheader("TrollyOrder Table")
     data_order = fetch_data("TrollyOrder")
 
     if not data_order.empty:
         st.dataframe(data_order)
+
+        # Convert 'price' column to numeric and calculate total bill
+        try:
+            data_order["price"] = pd.to_numeric(data_order["price"], errors="coerce")  # Handle errors
+            total_bill = data_order["price"].sum()
+            st.success(f"**Total Bill: ₹{total_bill:.2f}**")  # Display total
+        except Exception as e:
+            st.error(f"Error calculating total bill: {e}")
+
     else:
         st.warning("No data found in TrollyOrder table.")
-
