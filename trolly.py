@@ -1,32 +1,59 @@
 import mysql.connector
-from mysql.connector import Error
+import pandas as pd
+import streamlit as st
 
-try:
-    # Establish the database connection
-    connection = mysql.connector.connect(
-        host="82.180.143.66",
-        user="u263681140_students1",
-        password="testStudents@123",
-        database="u263681140_students1"
-    )
+# MySQL database connection details
+host = "82.180.143.66"
+user = "u263681140_students"
+password = "testStudents@123"
+database = "u263681140_students"
 
-    if connection.is_connected():
-        cursor = connection.cursor()
+# Function to fetch data from the TrollyProducts table
+def fetch_data():
+    try:
+        # Connect to MySQL database
+        connection = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database
+        )
 
-        # Query to fetch all data from TrollyProducts table
-        query = "SELECT * FROM TrollyProducts"
-        cursor.execute(query)
+        if connection.is_connected():
+            cursor = connection.cursor()
 
-        # Fetch all rows
-        records = cursor.fetchall()
+            # Query to fetch all data from TrollyProducts
+            query = "SELECT * FROM TrollyProducts"
+            cursor.execute(query)
 
-        # Display the records
-        for row in records:
-            print(row)
+            # Fetch column names
+            columns = [desc[0] for desc in cursor.description]
 
-        # Close cursor and connection
-        cursor.close()
-        connection.close()
+            # Fetch all rows
+            records = cursor.fetchall()
 
-except Error as e:
-    print("Error while connecting to MySQL:", e)
+            # Convert to DataFrame
+            df = pd.DataFrame(records, columns=columns)
+
+            # Close cursor and connection
+            cursor.close()
+            connection.close()
+
+            return df
+
+    except mysql.connector.Error as e:
+        st.error(f"Error connecting to MySQL: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame in case of error
+
+# Streamlit UI
+st.title("TrollyProducts Data Viewer")
+
+# Fetch and display data
+data = fetch_data()
+
+if not data.empty:
+    st.write("### Table Data")
+    st.dataframe(data)
+else:
+    st.warning("No data found or connection error.")
+
