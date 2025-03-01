@@ -6,9 +6,9 @@ import mysql.connector
 def get_db_connection():
     return mysql.connector.connect(
         host="82.180.143.66",
-        user="u263681140_students1",
+        user="u263681140_students",
         password="testStudents@123",
-        database="u263681140_students1"
+        database="u263681140_students"
     )
 
 # Function to fetch data from a table
@@ -18,7 +18,7 @@ def fetch_data(table_name):
     cursor.execute(f"SELECT * FROM {table_name}")
     data = cursor.fetchall()
     conn.close()
-    return data
+    return pd.DataFrame(data) if data else pd.DataFrame()
 
 # Function to delete a row based on RFidNo
 def delete_row(rfid_no):
@@ -37,44 +37,55 @@ tab1, tab2 = st.tabs(["Trolly Products", "Trolly Carts"])
 # 🛍️ **Tab 1: Display Trolly Products**
 with tab1:
     st.subheader("📦 Available Products")
-    products_data = fetch_data("TrollyProducts")
+    df_products = fetch_data("TrollyProducts")
     
-    if products_data:
-        df_products = pd.DataFrame(products_data)
+    if not df_products.empty:
         st.dataframe(df_products)
     else:
-        st.write("No products available.")
+        st.warning("No products available.")
 
 # 🛒 **Tab 2: Display Trolly Carts (Orders)**
 with tab2:
     st.subheader("🛒 Your Cart")
 
     # Fetch order data
-    order_data = fetch_data("TrollyOrder")
+    df_orders = fetch_data("TrollyOrder")
     
-    if order_data:
-        df_orders = pd.DataFrame(order_data)
+    if not df_orders.empty:
+        st.write("🔍 **Detected Columns:**", list(df_orders.columns))  # Debug: Print column names
+
+        # Standardize column names (remove spaces and lowercase)
+        df_orders.columns = df_orders.columns.str.strip().str.lower()
+
+        # Ensure correct column names
+        expected_columns = ["rfidno", "name", "weight", "price"]
+        if not all(col in df_orders.columns for col in expected_columns):
+            st.error("Error: Missing expected columns in TrollyOrder table.")
+            st.stop()
+
+        # Convert price to float
+        df_orders["price"] = pd.to_numeric(df_orders["price"], errors="coerce").fillna(0)
 
         # Add Delete button in a new column
-        df_orders["Action"] = df_orders["RFidNo"].apply(lambda x: f"🗑️ Delete {x}")
+        df_orders["action"] = df_orders["rfidno"].apply(lambda x: f"🗑️ Delete {x}")
 
         # Display order table
         edited_df = st.data_editor(
-            df_orders[["RFidNo", "Name", "Weight", "Price", "Action"]],
-            column_config={"Action": st.column_config.TextColumn("Action")},
+            df_orders[["rfidno", "name", "weight", "price", "action"]],
+            column_config={"action": st.column_config.TextColumn("Action")},
             hide_index=True
         )
 
         # Create delete buttons for each row
-        for rfid_no in df_orders["RFidNo"]:
+        for rfid_no in df_orders["rfidno"]:
             if st.button(f"Delete {rfid_no}"):
                 delete_row(rfid_no)
                 st.success(f"Deleted item with RFidNo: {rfid_no}")
                 st.experimental_rerun()
 
         # Calculate and display total bill
-        total_bill = df_orders["Price"].astype(float).sum()
+        total_bill = df_orders["price"].sum()
         st.subheader(f"💰 Total Bill: ₹{total_bill}")
 
     else:
-        st.write("No items in the cart.")
+        st.warning("No items in the cart.")
