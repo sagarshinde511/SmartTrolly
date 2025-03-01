@@ -1,104 +1,80 @@
-import mysql.connector
-import pandas as pd
 import streamlit as st
-from st_aggrid import AgGrid, GridOptionsBuilder
-from st_aggrid.shared import JsCode
+import pandas as pd
+import mysql.connector
 
-# MySQL database connection details
-host = "82.180.143.66"
-user = "u263681140_students1"
-password = "testStudents@123"
-database = "u263681140_students1"
+# Function to connect to MySQL database
+def get_db_connection():
+    return mysql.connector.connect(
+        host="82.180.143.66",
+        user="u263681140_students",
+        password="testStudents@123",
+        database="u263681140_students"
+    )
 
 # Function to fetch data from a table
 def fetch_data(table_name):
-    try:
-        connection = mysql.connector.connect(host=host, user=user, password=password, database=database)
-        if connection.is_connected():
-            cursor = connection.cursor()
-            query = f"SELECT * FROM {table_name}"
-            cursor.execute(query)
-            columns = [desc[0] for desc in cursor.description]
-            records = cursor.fetchall()
-            cursor.close()
-            connection.close()
-            return pd.DataFrame(records, columns=columns)
-    except mysql.connector.Error as e:
-        st.error(f"Error connecting to MySQL: {e}")
-        return pd.DataFrame()
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM {table_name}")
+    data = cursor.fetchall()
+    conn.close()
+    return data
 
-# Function to delete a row from the table
-def delete_row(table_name, column_name, value):
-    try:
-        connection = mysql.connector.connect(host=host, user=user, password=password, database=database)
-        if connection.is_connected():
-            cursor = connection.cursor()
-            query = f"DELETE FROM {table_name} WHERE {column_name} = %s"
-            cursor.execute(query, (value,))
-            connection.commit()
-            cursor.close()
-            connection.close()
-            st.success(f"Deleted row with {column_name} = {value} successfully!")
-    except mysql.connector.Error as e:
-        st.error(f"Error deleting row: {e}")
+# Function to delete a row based on RFidNo
+def delete_row(rfid_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM TrollyOrder WHERE RFidNo = %s", (rfid_no,))
+    conn.commit()
+    conn.close()
 
 # Streamlit UI
-st.title("Trolly Carts Data Viewer")
+st.title("🛒 Smart Trolly System")
 
-# Create tabs for separate tables
-tab1, tab2 = st.tabs(["TrollyProducts", "TrollyOrder"])
+# Create tabs
+tab1, tab2 = st.tabs(["Trolly Products", "Trolly Carts"])
 
-# Tab 1: Display TrollyProducts Table
+# 🛍️ **Tab 1: Display Trolly Products**
 with tab1:
-    st.subheader("TrollyProducts Table")
-    data_products = fetch_data("TrollyProducts")
-    if not data_products.empty:
-        st.dataframe(data_products)
+    st.subheader("📦 Available Products")
+    products_data = fetch_data("TrollyProducts")
+    
+    if products_data:
+        df_products = pd.DataFrame(products_data)
+        st.dataframe(df_products)
     else:
-        st.warning("No data found in TrollyProducts table.")
+        st.write("No products available.")
 
-# Tab 2: Display TrollyOrder Table with Delete Button in Each Row
+# 🛒 **Tab 2: Display Trolly Carts (Orders)**
 with tab2:
-    st.subheader("TrollyOrder Table")
-    data_order = fetch_data("TrollyOrder")
+    st.subheader("🛒 Your Cart")
 
-    if not data_order.empty:
-        # Convert 'price' column to numeric and calculate total bill
-        try:
-            data_order["price"] = pd.to_numeric(data_order["price"], errors="coerce")
-            total_bill = data_order["price"].sum()
-            st.success(f"**Total Bill: ₹{total_bill:.2f}**")
-        except Exception as e:
-            st.error(f"Error calculating total bill: {e}")
+    # Fetch order data
+    order_data = fetch_data("TrollyOrder")
+    
+    if order_data:
+        df_orders = pd.DataFrame(order_data)
 
-        # Add a "Delete" column in the table
-        data_order["Delete"] = ["❌ Delete"] * len(data_order)
+        # Add Delete button in a new column
+        df_orders["Action"] = df_orders["RFidNo"].apply(lambda x: f"🗑️ Delete {x}")
 
-        # AgGrid table configuration
-        gb = GridOptionsBuilder.from_dataframe(data_order)
-        gb.configure_pagination(enabled=True)
-        gb.configure_side_bar()
-        gb.configure_selection(selection_mode="single", use_checkbox=True)  # Enable row selection
-        gb.configure_column("Delete", cellRenderer=JsCode("""
-            function(params) {
-                return '<button onclick="deleteRow()">❌ Delete</button>'
-            }
-        """))
-
-        grid_response = AgGrid(
-            data_order,
-            gridOptions=gb.build(),
-            update_mode="grid_changed",
-            fit_columns_on_grid_load=True
+        # Display order table
+        edited_df = st.data_editor(
+            df_orders[["RFidNo", "Name", "Weight", "Price", "Action"]],
+            column_config={"Action": st.column_config.TextColumn("Action")},
+            hide_index=True
         )
 
-        # Get selected row
-        selected_rows = grid_response["selected_rows"]
-        if selected_rows:
-            selected_rfid = selected_rows[0]["RFidNo"]  # Assuming RFidNo is the unique key
-            if st.button(f"Delete Selected Row (RFidNo: {selected_rfid})"):
-                delete_row("TrollyOrder", "RFidNo", selected_rfid)
-                st.experimental_rerun()  # Refresh the table after deletion
+        # Create delete buttons for each row
+        for rfid_no in df_orders["RFidNo"]:
+            if st.button(f"Delete {rfid_no}"):
+                delete_row(rfid_no)
+                st.success(f"Deleted item with RFidNo: {rfid_no}")
+                st.experimental_rerun()
+
+        # Calculate and display total bill
+        total_bill = df_orders["Price"].astype(float).sum()
+        st.subheader(f"💰 Total Bill: ₹{total_bill}")
 
     else:
-        st.warning("No data found in TrollyOrder table.")
+        st.write("No items in the cart.")
