@@ -6,9 +6,9 @@ import mysql.connector
 def get_db_connection():
     return mysql.connector.connect(
         host="82.180.143.66",
-        user="u263681140_students1",
+        user="u263681140_students",
         password="testStudents@123",
-        database="u263681140_students1"
+        database="u263681140_students"
     )
 
 # Function to fetch data from a table
@@ -52,16 +52,12 @@ with tab2:
     df_orders = fetch_data("TrollyOrder")
     
     if not df_orders.empty:
-        st.write("🔍 **Detected Columns:**", list(df_orders.columns))  # Debug: Print column names
-
         # Standardize column names (remove spaces and lowercase)
         df_orders.columns = df_orders.columns.str.strip().str.lower()
 
         # Ensure correct column names
         expected_columns = ["rfidno", "name", "weight", "price"]
-        if not all(col in df_orders.columns for col in expected_columns):
-            st.error("Error: Missing expected columns in TrollyOrder table.")
-            st.stop()
+        df_orders = df_orders[[col for col in expected_columns if col in df_orders.columns]]
 
         # Convert price to float
         df_orders["price"] = pd.to_numeric(df_orders["price"], errors="coerce").fillna(0)
