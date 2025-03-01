@@ -4,12 +4,12 @@ import streamlit as st
 
 # MySQL database connection details
 host = "82.180.143.66"
-user = "u263681140_students1"
+user = "u263681140_students"
 password = "testStudents@123"
-database = "u263681140_students1"
+database = "u263681140_students"
 
-# Function to fetch data from the TrollyProducts table
-def fetch_data():
+# Function to fetch data from a table
+def fetch_data(table_name):
     try:
         # Connect to MySQL database
         connection = mysql.connector.connect(
@@ -22,8 +22,8 @@ def fetch_data():
         if connection.is_connected():
             cursor = connection.cursor()
 
-            # Query to fetch all data from TrollyProducts
-            query = "SELECT * FROM TrollyProducts"
+            # Query to fetch all data from the given table
+            query = f"SELECT * FROM {table_name}"
             cursor.execute(query)
 
             # Fetch column names
@@ -46,14 +46,28 @@ def fetch_data():
         return pd.DataFrame()  # Return an empty DataFrame in case of error
 
 # Streamlit UI
-st.title("TrollyProducts Data Viewer")
+st.title("Trolly Carts Data Viewer")
 
-# Fetch and display data
-data = fetch_data()
+# Create tabs for separate tables
+tab1, tab2 = st.tabs(["TrollyProducts", "TrollyOrder"])
 
-if not data.empty:
-    st.write("### Table Data")
-    st.dataframe(data)
-else:
-    st.warning("No data found or connection error.")
+# Tab 1: Display TrollyProducts Table
+with tab1:
+    st.subheader("TrollyProducts Table")
+    data_products = fetch_data("TrollyProducts")
+
+    if not data_products.empty:
+        st.dataframe(data_products)
+    else:
+        st.warning("No data found in TrollyProducts table.")
+
+# Tab 2: Display TrollyOrder Table
+with tab2:
+    st.subheader("TrollyOrder Table")
+    data_order = fetch_data("TrollyOrder")
+
+    if not data_order.empty:
+        st.dataframe(data_order)
+    else:
+        st.warning("No data found in TrollyOrder table.")
 
