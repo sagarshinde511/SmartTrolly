@@ -1,12 +1,14 @@
 import mysql.connector
 import pandas as pd
 import streamlit as st
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import JsCode
 
 # MySQL database connection details
 host = "82.180.143.66"
-user = "u263681140_students1"
+user = "u263681140_students"
 password = "testStudents@123"
-database = "u263681140_students1"
+database = "u263681140_students"
 
 # Function to fetch data from a table
 def fetch_data(table_name):
@@ -55,7 +57,7 @@ with tab1:
     else:
         st.warning("No data found in TrollyProducts table.")
 
-# Tab 2: Display TrollyOrder Table with Delete Option
+# Tab 2: Display TrollyOrder Table with Delete Button in Each Row
 with tab2:
     st.subheader("TrollyOrder Table")
     data_order = fetch_data("TrollyOrder")
@@ -69,13 +71,34 @@ with tab2:
         except Exception as e:
             st.error(f"Error calculating total bill: {e}")
 
-        # Create a delete button for each row
-        selected_index = st.selectbox("Select a row to delete", data_order.index)
-        selected_row = data_order.iloc[selected_index]
+        # Add a "Delete" column in the table
+        data_order["Delete"] = ["❌ Delete"] * len(data_order)
 
-        if st.button(f"Delete Row {selected_index}"):
-            delete_row("TrollyOrder", "RFidNo", selected_row["RFidNo"])  # Assuming RFidNo is the unique identifier
-            st.experimental_rerun()  # Refresh the table after deletion
+        # AgGrid table configuration
+        gb = GridOptionsBuilder.from_dataframe(data_order)
+        gb.configure_pagination(enabled=True)
+        gb.configure_side_bar()
+        gb.configure_selection(selection_mode="single", use_checkbox=True)  # Enable row selection
+        gb.configure_column("Delete", cellRenderer=JsCode("""
+            function(params) {
+                return '<button onclick="deleteRow()">❌ Delete</button>'
+            }
+        """))
+
+        grid_response = AgGrid(
+            data_order,
+            gridOptions=gb.build(),
+            update_mode="grid_changed",
+            fit_columns_on_grid_load=True
+        )
+
+        # Get selected row
+        selected_rows = grid_response["selected_rows"]
+        if selected_rows:
+            selected_rfid = selected_rows[0]["RFidNo"]  # Assuming RFidNo is the unique key
+            if st.button(f"Delete Selected Row (RFidNo: {selected_rfid})"):
+                delete_row("TrollyOrder", "RFidNo", selected_rfid)
+                st.experimental_rerun()  # Refresh the table after deletion
 
     else:
         st.warning("No data found in TrollyOrder table.")
