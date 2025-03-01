@@ -6,9 +6,9 @@ import mysql.connector
 def get_db_connection():
     return mysql.connector.connect(
         host="82.180.143.66",
-        user="u263681140_students",
+        user="u263681140_students1",
         password="testStudents@123",
-        database="u263681140_students"
+        database="u263681140_students1"
     )
 
 # Function to fetch data from a table
