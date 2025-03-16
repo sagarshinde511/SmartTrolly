@@ -103,7 +103,8 @@ with tab2:
             if st.button(f"Delete {rfid_no}"):
                 delete_row(rfid_no)
                 st.success(f"Deleted item with RFidNo: {rfid_no}")
-                st.experimental_rerun()
+                st.rerun()
+                
         
         total_bill = df_orders["price"].sum()
         st.subheader(f"💰 Total Bill: ₹{total_bill}")
@@ -125,7 +126,7 @@ with tab3:
         if rfid and name and group and weight > 0 and price > 0:
             if insert_product(rfid, name, group, weight, price):
                 st.success("✅ Product registered successfully!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("⚠️ Error: Could not insert the product. Check the database constraints.")
         else:
