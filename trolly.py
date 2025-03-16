@@ -28,7 +28,7 @@ def delete_row(rfid_no):
     conn.commit()
     conn.close()
 
- # Function to insert a new product (Allowing duplicate RFID values)
+# Function to insert a new product (Allowing duplicate RFID values)
 def insert_product(rfid, name, group, weight, price):
     try:
         conn = get_db_connection()
@@ -42,6 +42,7 @@ def insert_product(rfid, name, group, weight, price):
         print("Error:", e)
         return False  # Handle insertion errors gracefully
 
+# Function to fetch stock data
 def fetch_stock_data(name_filter=None, weight_filter=None):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -69,20 +70,10 @@ def fetch_stock_data(name_filter=None, weight_filter=None):
 st.title("🛒 Smart Trolly System")
 
 # Create tabs
-tab1, tab2, tab3, tab4 = st.tabs(["Trolly Products", "Trolly Carts", "Register Product", "Stock Data"])
+tab1, tab2, tab3, tab4 = st.tabs(["Trolly Carts", "Trolly Products", "Register Product", "Stock Data"])
 
-# 🛍️ **Tab 1: Display Trolly Products**
+# 🛒 **Tab 1: Display Trolly Carts (Orders)**
 with tab1:
-    st.subheader("📦 Available Products")
-    df_products = fetch_data("TrollyProducts")
-    
-    if not df_products.empty:
-        st.dataframe(df_products)
-    else:
-        st.warning("No products available.")
-
-# 🛒 **Tab 2: Display Trolly Carts (Orders)**
-with tab2:
     st.subheader("🛒 Your Cart")
     df_orders = fetch_data("TrollyOrder")
     
@@ -104,13 +95,23 @@ with tab2:
                 delete_row(rfid_no)
                 st.success(f"Deleted item with RFidNo: {rfid_no}")
                 st.rerun()
-                
         
         total_bill = df_orders["price"].sum()
         st.subheader(f"💰 Total Bill: ₹{total_bill}")
     else:
         st.warning("No items in the cart.")
 
+# 🛍️ **Tab 2: Display Trolly Products**
+with tab2:
+    st.subheader("📦 Available Products")
+    df_products = fetch_data("TrollyProducts")
+    
+    if not df_products.empty:
+        st.dataframe(df_products)
+    else:
+        st.warning("No products available.")
+
+# ➕ **Tab 3: Register New Product**
 with tab3:
     st.subheader("➕ Register New Product")
     
@@ -131,6 +132,7 @@ with tab3:
                 st.error("⚠️ Error: Could not insert the product. Check the database constraints.")
         else:
             st.error("⚠️ Please fill in all details correctly.")
+
 # 📊 **Tab 4: Stock Data**
 with tab4:
     st.subheader("📊 Stock Data")
