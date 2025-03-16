@@ -41,14 +41,18 @@ def check_rfid_exists(rfid):
 def insert_product(rfid, name, group, weight, price):
     if check_rfid_exists(rfid):
         return False
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO TrollyProducts (RFid, Name, `Group`, Weight, Price) VALUES (%s, %s, %s, %s, %s)",
-                   (rfid, name, group, weight, price))
-    conn.commit()
-    conn.close()
-    return True
-
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO TrollyProducts (RFid, Name, `Group`, Weight, Price) VALUES (%s, %s, %s, %s, %s)",
+            (rfid, name, group, weight, price)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except mysql.connector.IntegrityError:
+        return False
 # Function to get stock data with filtering options
 def fetch_stock_data(name_filter=None, weight_filter=None):
     conn = get_db_connection()
