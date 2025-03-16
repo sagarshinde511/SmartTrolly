@@ -108,30 +108,48 @@ if not st.session_state.logged_in:
 else:
     st.sidebar.button("Logout", on_click=logout)
     tab1, tab2, tab3, tab4 = st.tabs(["Trolly Carts", "Trolly Products", "Register Product", "Stock Data"])
-    
     with tab1:
         st.subheader("🛒 Your Cart")
+    
+        # Fetch data from TrollyOrder table
         df_orders = fetch_data("TrollyOrder")
+    
         if not df_orders.empty:
             df_orders.columns = df_orders.columns.str.strip().str.lower()
+    
+            # Display Trolly Number (Tra_No)
+            if "tra_no" in df_orders.columns:
+                trolly_numbers = df_orders["tra_no"].unique()
+                st.info(f"🛒 Trolly Number(s): {', '.join(map(str, trolly_numbers))}")
+    
+            # Filter and display relevant columns
             expected_columns = ["rfidno", "name", "weight", "price"]
             df_orders = df_orders[[col for col in expected_columns if col in df_orders.columns]]
+    
+            # Convert price to numeric and handle NaN values
             df_orders["price"] = pd.to_numeric(df_orders["price"], errors="coerce").fillna(0)
+    
+            # Display the data editor
             df_orders["action"] = df_orders["rfidno"].apply(lambda x: f"🗑️ Delete {x}")
             edited_df = st.data_editor(
                 df_orders[["rfidno", "name", "weight", "price", "action"]],
                 column_config={"action": st.column_config.TextColumn("Action")},
                 hide_index=True
             )
+    
+            # Add delete buttons for each item
             for rfid_no in df_orders["rfidno"]:
                 if st.button(f"Delete {rfid_no}"):
                     delete_row(rfid_no)
                     st.success(f"Deleted item with RFidNo: {rfid_no}")
                     st.rerun()
+    
+            # Display total bill
             st.subheader(f"💰 Total Bill: ₹{df_orders['price'].sum()}")
+    
         else:
             st.warning("No items in the cart.")
-    
+            
     with tab2:
         st.subheader("📦 Available Products")
         df_products = fetch_data("TrollyProducts")
