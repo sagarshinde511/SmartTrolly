@@ -37,6 +37,7 @@ def insert_product(rfid, name, group, weight, price):
     conn.commit()
     conn.close()
 
+# Function to get stock data with filtering options
 def fetch_stock_data(name_filter=None, weight_filter=None):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -64,7 +65,7 @@ def fetch_stock_data(name_filter=None, weight_filter=None):
 st.title("🛒 Smart Trolly System")
 
 # Create tabs
-tab1, tab2, tab3 = st.tabs(["Trolly Products", "Trolly Carts", "Register Product"])
+tab1, tab2, tab3, tab4 = st.tabs(["Trolly Products", "Trolly Carts", "Register Product", "Stock Data"])
 
 # 🛍️ **Tab 1: Display Trolly Products**
 with tab1:
@@ -121,9 +122,11 @@ with tab3:
         if rfid and name and group and weight > 0 and price > 0:
             insert_product(rfid, name, group, weight, price)
             st.success("Product registered successfully!")
-            st.rerun()
+            st.experimental_rerun()
         else:
             st.error("Please fill in all details correctly.")
+
+# 📊 **Tab 4: Stock Data**
 with tab4:
     st.subheader("📊 Stock Data")
     name_filter = st.text_input("Filter by Name")
