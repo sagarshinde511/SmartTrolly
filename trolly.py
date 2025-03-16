@@ -36,19 +36,21 @@ def check_rfid_exists(rfid):
     count = cursor.fetchone()[0]
     conn.close()
     return count > 0
-
 # Function to insert a new product
 def insert_product(rfid, name, group, weight, price):
-    if check_rfid_exists(rfid):
-        return False
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO TrollyProducts (RFid, Name, `Group`, Weight, Price) VALUES (%s, %s, %s, %s, %s)",
-                   (rfid, name, group, weight, price))
-    conn.commit()
-    conn.close()
-    return True
-
+    try:
+        if check_rfid_exists(rfid):
+            return False  # RFID already exists
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO TrollyProducts (RFid, Name, `Group`, Weight, Price) VALUES (%s, %s, %s, %s, %s)",
+                       (rfid, name, group, weight, price))
+        conn.commit()
+        conn.close()
+        return True
+    except mysql.connector.IntegrityError:
+        return False  # Handle duplicate entry gracefully
 # Function to get stock data with filtering options
 def fetch_stock_data(name_filter=None, weight_filter=None):
     conn = get_db_connection()
@@ -133,13 +135,12 @@ with tab3:
     if st.button("Register Product"):
         if rfid and name and group and weight > 0 and price > 0:
             if insert_product(rfid, name, group, weight, price):
-                st.success("Product registered successfully!")
+                st.success("✅ Product registered successfully!")
                 st.experimental_rerun()
             else:
-                st.error("RFID already exists! Please use a different RFID.")
+                st.error("⚠️ Error: RFID already exists! Please use a different RFID.")
         else:
-            st.error("Please fill in all details correctly.")
-
+            st.error("⚠️ Please fill in all details correctly.")
 # 📊 **Tab 4: Stock Data**
 with tab4:
     st.subheader("📊 Stock Data")
