@@ -28,14 +28,26 @@ def delete_row(rfid_no):
     conn.commit()
     conn.close()
 
+# Function to check if RFID already exists
+def check_rfid_exists(rfid):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM TrollyProducts WHERE RFid = %s", (rfid,))
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count > 0
+
 # Function to insert a new product
 def insert_product(rfid, name, group, weight, price):
+    if check_rfid_exists(rfid):
+        return False
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("INSERT INTO TrollyProducts (RFid, Name, `Group`, Weight, Price) VALUES (%s, %s, %s, %s, %s)",
                    (rfid, name, group, weight, price))
     conn.commit()
     conn.close()
+    return True
 
 # Function to get stock data with filtering options
 def fetch_stock_data(name_filter=None, weight_filter=None):
@@ -120,9 +132,11 @@ with tab3:
     
     if st.button("Register Product"):
         if rfid and name and group and weight > 0 and price > 0:
-            insert_product(rfid, name, group, weight, price)
-            st.success("Product registered successfully!")
-            st.experimental_rerun()
+            if insert_product(rfid, name, group, weight, price):
+                st.success("Product registered successfully!")
+                st.experimental_rerun()
+            else:
+                st.error("RFID already exists! Please use a different RFID.")
         else:
             st.error("Please fill in all details correctly.")
 
