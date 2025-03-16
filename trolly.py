@@ -119,7 +119,7 @@ else:
             df_orders["price"] = pd.to_numeric(df_orders["price"], errors="coerce").fillna(0)
             df_orders["action"] = df_orders["rfidno"].apply(lambda x: f"🗑️ Delete {x}")
             edited_df = st.data_editor(
-                df_orders[["TrollyNo", "rfidno", "name", "weight", "price", "action"]],
+                df_orders[["rfidno", "name", "weight", "price", "action"]],
                 column_config={"action": st.column_config.TextColumn("Action")},
                 hide_index=True
             )
