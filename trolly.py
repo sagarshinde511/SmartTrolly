@@ -37,6 +37,29 @@ def insert_product(rfid, name, group, weight, price):
     conn.commit()
     conn.close()
 
+def fetch_stock_data(name_filter=None, weight_filter=None):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    query = "SELECT Name, Weight, COUNT(*) as Stock FROM TrollyProducts"
+    conditions = []
+    params = []
+    
+    if name_filter:
+        conditions.append("Name = %s")
+        params.append(name_filter)
+    if weight_filter:
+        conditions.append("Weight = %s")
+        params.append(weight_filter)
+    
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    
+    query += " GROUP BY Name, Weight"
+    cursor.execute(query, tuple(params))
+    data = cursor.fetchall()
+    conn.close()
+    return pd.DataFrame(data) if data else pd.DataFrame()
+
 # Streamlit UI
 st.title("🛒 Smart Trolly System")
 
@@ -101,3 +124,13 @@ with tab3:
             st.rerun()
         else:
             st.error("Please fill in all details correctly.")
+with tab4:
+    st.subheader("📊 Stock Data")
+    name_filter = st.text_input("Filter by Name")
+    weight_filter = st.number_input("Filter by Weight", min_value=0.0, format="%.2f")
+    df_stock = fetch_stock_data(name_filter if name_filter else None, weight_filter if weight_filter > 0 else None)
+    
+    if not df_stock.empty:
+        st.dataframe(df_stock)
+    else:
+        st.warning("No stock data available.")
