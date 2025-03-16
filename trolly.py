@@ -28,16 +28,7 @@ def delete_row(rfid_no):
     conn.commit()
     conn.close()
 
-# Function to check if RFID already exists
-def check_rfid_exists(rfid):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM TrollyProducts WHERE RFid = %s", (rfid,))
-    count = cursor.fetchone()[0]
-    conn.close()
-    return count > 0
-    
-# Function to insert a new product (Allowing duplicate RFID values)
+ # Function to insert a new product (Allowing duplicate RFID values)
 def insert_product(rfid, name, group, weight, price):
     try:
         conn = get_db_connection()
@@ -119,7 +110,6 @@ with tab2:
     else:
         st.warning("No items in the cart.")
 
-# 🏷️ **Tab 3: Register New Product**
 with tab3:
     st.subheader("➕ Register New Product")
     
@@ -137,7 +127,7 @@ with tab3:
                 st.success("✅ Product registered successfully!")
                 st.experimental_rerun()
             else:
-                st.error("⚠️ Error: RFID already exists! Please use a different RFID.")
+                st.error("⚠️ Error: Could not insert the product. Check the database constraints.")
         else:
             st.error("⚠️ Please fill in all details correctly.")
 # 📊 **Tab 4: Stock Data**
