@@ -98,6 +98,6 @@ with tab3:
         if rfid and name and group and weight > 0 and price > 0:
             insert_product(rfid, name, group, weight, price)
             st.success("Product registered successfully!")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Please fill in all details correctly.")
