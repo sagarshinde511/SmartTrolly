@@ -111,27 +111,32 @@ with tab2:
     else:
         st.warning("No products available.")
 
-# ➕ **Tab 3: Register New Product**
 with tab3:
     st.subheader("➕ Register New Product")
     
-    rfid = st.text_input("RFID Number")
-    name_options = ["Apple", "Banana", "Milk", "Bread", "Eggs"]
-    group_options = ["Fruits", "Dairy", "Bakery", "Grocery"]
-    name = st.selectbox("Product Name", name_options)
-    group = st.selectbox("Product Group", group_options)
-    weight = st.number_input("Weight (in grams)", min_value=0.0, format="%.2f")
-    price = st.number_input("Price (in ₹)", min_value=0.0, format="%.2f")
+    option = st.radio("Choose an option:", ["Register Product", "Add Drop-down Product"])
     
-    if st.button("Register Product"):
-        if rfid and name and group and weight > 0 and price > 0:
-            if insert_product(rfid, name, group, weight, price):
-                st.success("✅ Product registered successfully!")
-                st.rerun()
+    if option == "Register Product":
+        rfid = st.text_input("RFID Number")
+        name_options = ["Apple", "Banana", "Milk", "Bread", "Eggs"]
+        group_options = ["Fruits", "Dairy", "Bakery", "Grocery"]
+        name = st.selectbox("Product Name", name_options)
+        group = st.selectbox("Product Group", group_options)
+        weight = st.number_input("Weight (in grams)", min_value=0.0, format="%.2f")
+        price = st.number_input("Price (in ₹)", min_value=0.0, format="%.2f")
+        
+        if st.button("Register Product"):
+            if rfid and name and group and weight > 0 and price > 0:
+                if insert_product(rfid, name, group, weight, price):
+                    st.success("✅ Product registered successfully!")
+                    st.rerun()
+                else:
+                    st.error("⚠️ Error: Could not insert the product. Check the database constraints.")
             else:
-                st.error("⚠️ Error: Could not insert the product. Check the database constraints.")
-        else:
-            st.error("⚠️ Please fill in all details correctly.")
+                st.error("⚠️ Please fill in all details correctly.")
+    else:
+        st.subheader("📋 Add Drop-down Product")
+        st.warning("Feature coming soon!")
 
 # 📊 **Tab 4: Stock Data**
 with tab4:
