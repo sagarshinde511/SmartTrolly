@@ -41,6 +41,19 @@ def insert_product(rfid, name, group, weight, price):
     except mysql.connector.Error as e:
         print("Error:", e)
         return False  # Handle insertion errors gracefully
+# Function to insert data into TrollyProductsDropDown
+def insert_dropdown_product(name, group):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO TrollyProductsDropDown (Name, `Group`) VALUES (%s, %s)",
+                       (name, group))
+        conn.commit()
+        conn.close()
+        return True
+    except mysql.connector.Error as e:
+        print("Error:", e)
+        return False
 
 # Function to fetch stock data
 def fetch_stock_data(name_filter=None, weight_filter=None):
@@ -110,7 +123,7 @@ with tab2:
         st.dataframe(df_products)
     else:
         st.warning("No products available.")
-
+# ➕ **Tab 3: Register New Product**
 with tab3:
     st.subheader("➕ Register New Product")
     
@@ -136,7 +149,17 @@ with tab3:
                 st.error("⚠️ Please fill in all details correctly.")
     else:
         st.subheader("📋 Add Drop-down Product")
-        st.warning("Feature coming soon!")
+        name = st.text_input("Product Name")
+        group = st.text_input("Product Group")
+        if st.button("Add Product"):
+            if name and group:
+                if insert_dropdown_product(name, group):
+                    st.success("✅ Drop-down product added successfully!")
+                    st.rerun()
+                else:
+                    st.error("⚠️ Error: Could not insert the drop-down product.")
+            else:
+                st.error("⚠️ Please fill in all details correctly.")
 
 # 📊 **Tab 4: Stock Data**
 with tab4:
