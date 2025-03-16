@@ -41,6 +41,23 @@ def insert_product(rfid, name, group, weight, price):
     except mysql.connector.Error as e:
         print("Error:", e)
         return False  # Handle insertion errors gracefully
+
+def fetch_dropdown_options():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT Name, `Group` FROM TrollyProductsDropDown")
+    data = cursor.fetchall()
+    
+    conn.close()
+
+    # Separate data into two lists
+    name_list = [row[0] for row in data]  # First column (Name)
+    group_list = [row[1] for row in data]  # Second column (Group)
+    
+    return name_list, group_list
+
+
 # Function to insert data into TrollyProductsDropDown
 def insert_dropdown_product(name, group):
     try:
@@ -131,8 +148,9 @@ with tab3:
     
     if option == "Register Product":
         rfid = st.text_input("RFID Number")
-        name_options = ["Apple", "Banana", "Milk", "Bread", "Eggs"]
-        group_options = ["Fruits", "Dairy", "Bakery", "Grocery"]
+        name_options, group_options = fetch_dropdown_options()
+        #name_options = ["Apple", "Banana", "Milk", "Bread", "Eggs"]
+        #group_options = ["Fruits", "Dairy", "Bakery", "Grocery"]
         name = st.selectbox("Product Name", name_options)
         group = st.selectbox("Product Group", group_options)
         weight = st.number_input("Weight (in grams)", min_value=0.0, format="%.2f")
