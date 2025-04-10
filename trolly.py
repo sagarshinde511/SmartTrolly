@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import mysql.connector
 
+# Database connection
 def get_db_connection():
     return mysql.connector.connect(
         host="82.180.143.66",
@@ -10,6 +11,7 @@ def get_db_connection():
         database="u263681140_students1"
     )
 
+# Fetch full table data
 def fetch_data(table_name):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -18,6 +20,7 @@ def fetch_data(table_name):
     conn.close()
     return pd.DataFrame(data) if data else pd.DataFrame()
 
+# Delete order by RFID
 def delete_row(rfid_no):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -25,6 +28,7 @@ def delete_row(rfid_no):
     conn.commit()
     conn.close()
 
+# Insert new product
 def insert_product(rfid, name, group, weight, price):
     try:
         conn = get_db_connection()
@@ -34,9 +38,10 @@ def insert_product(rfid, name, group, weight, price):
         conn.commit()
         conn.close()
         return True
-    except mysql.connector.Error as e:
+    except mysql.connector.Error:
         return False
 
+# Fetch product dropdown options
 def fetch_dropdown_options():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -47,6 +52,7 @@ def fetch_dropdown_options():
     group_list = [row[1] for row in data]
     return name_list, group_list
 
+# Insert into dropdown product table
 def insert_dropdown_product(name, group):
     try:
         conn = get_db_connection()
@@ -55,9 +61,10 @@ def insert_dropdown_product(name, group):
         conn.commit()
         conn.close()
         return True
-    except mysql.connector.Error as e:
+    except mysql.connector.Error:
         return False
 
+# Fetch stock data
 def fetch_stock_data(name_filter=None, weight_filter=None):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -81,7 +88,8 @@ def fetch_stock_data(name_filter=None, weight_filter=None):
     conn.close()
     return pd.DataFrame(data) if data else pd.DataFrame()
 
-# Streamlit UI
+# ------------------ Streamlit UI ------------------
+
 st.title("🛒 Smart Trolly System")
 
 # Authentication
@@ -96,6 +104,7 @@ def logout():
     st.session_state.logged_in = False
     st.rerun()
 
+# Login Screen
 if not st.session_state.logged_in:
     st.subheader("🔐 Login")
     username = st.text_input("Username")
@@ -108,7 +117,8 @@ if not st.session_state.logged_in:
 else:
     st.sidebar.button("Logout", on_click=logout)
     tab1, tab2, tab3, tab4 = st.tabs(["Trolly Carts", "Trolly Products", "Register Product", "Stock Data"])
-    
+
+    # Tab 1: Trolly Cart
     with tab1:
         st.subheader("🛒 Your Cart")
         df_orders = fetch_data("TrollyOrder")
@@ -117,22 +127,24 @@ else:
             expected_columns = ["rfidno", "name", "weight", "price"]
             df_orders = df_orders[[col for col in expected_columns if col in df_orders.columns]]
             df_orders["price"] = pd.to_numeric(df_orders["price"], errors="coerce").fillna(0)
-            df_orders["action"] = df_orders["rfidno"].apply(lambda x: f"🗑️ Delete {x}")
-            edited_df = st.data_editor(
-                df_orders[["rfidno", "name", "weight", "price", "action"]],
-                column_config={"action": st.column_config.TextColumn("Action")},
-                hide_index=True
-            )
-            
-            for idx, rfid_no in enumerate(df_orders["rfidno"]):
-                if st.button(f"Delete", key=f"delete_{rfid_no}_{idx}"):
-                    delete_row(rfid_no)
-                    st.success(f"Deleted item with RFidNo: {rfid_no}")
+
+            st.write("### Cart Items")
+            for idx, row in df_orders.iterrows():
+                col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 1])
+                col1.write(f"**RFID:** {row['rfidno']}")
+                col2.write(f"**Name:** {row['name']}")
+                col3.write(f"**Weight:** {row['weight']} g")
+                col4.write(f"**Price:** ₹{row['price']}")
+                if col5.button("🗑️", key=f"delete_btn_{idx}"):
+                    delete_row(row['rfidno'])
+                    st.success(f"Deleted item with RFidNo: {row['rfidno']}")
                     st.rerun()
+
             st.subheader(f"💰 Total Bill: ₹{df_orders['price'].sum()}")
         else:
             st.warning("No items in the cart.")
-    
+
+    # Tab 2: Trolly Products
     with tab2:
         st.subheader("📦 Available Products")
         df_products = fetch_data("TrollyProducts")
@@ -140,10 +152,12 @@ else:
             st.dataframe(df_products)
         else:
             st.warning("No products available.")
-    
+
+    # Tab 3: Register Product
     with tab3:
         st.subheader("➕ Register New Product")
         option = st.radio("Choose an option:", ["Register Product", "Add Drop-down Product"])
+
         if option == "Register Product":
             rfid = st.text_input("RFID Number")
             name_options, group_options = fetch_dropdown_options()
@@ -151,6 +165,7 @@ else:
             group = st.selectbox("Product Group", group_options)
             weight = st.number_input("Weight (in grams)", min_value=0.0, format="%.2f")
             price = st.number_input("Price (in ₹)", min_value=0.0, format="%.2f")
+
             if st.button("Register Product"):
                 if rfid and name and group and weight > 0 and price > 0:
                     if insert_product(rfid, name, group, weight, price):
@@ -160,7 +175,22 @@ else:
                         st.error("⚠️ Error: Could not insert the product.")
                 else:
                     st.error("⚠️ Please fill in all details correctly.")
-    
+
+        elif option == "Add Drop-down Product":
+            new_name = st.text_input("New Product Name")
+            new_group = st.text_input("New Product Group")
+
+            if st.button("Add Drop-down Option"):
+                if new_name and new_group:
+                    if insert_dropdown_product(new_name, new_group):
+                        st.success("✅ Drop-down option added!")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ Failed to add drop-down option.")
+                else:
+                    st.error("⚠️ Fill in all fields.")
+
+    # Tab 4: Stock Data
     with tab4:
         st.subheader("📊 Stock Data")
         df_stock = fetch_stock_data()
