@@ -123,8 +123,9 @@ else:
                 column_config={"action": st.column_config.TextColumn("Action")},
                 hide_index=True
             )
-            for rfid_no in df_orders["rfidno"]:
-                if st.button(f"Delete {rfid_no}"):
+            
+            for idx, rfid_no in enumerate(df_orders["rfidno"]):
+                if st.button(f"Delete", key=f"delete_{rfid_no}_{idx}"):
                     delete_row(rfid_no)
                     st.success(f"Deleted item with RFidNo: {rfid_no}")
                     st.rerun()
